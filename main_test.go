@@ -1,7 +1,6 @@
-package nld
+package main
 
 import (
-	//	"fmt"
 	"testing"
 )
 
@@ -24,6 +23,9 @@ func TestReverse(t *testing.T) {
 	two := []string{"one", "two"}
 	three := []string{"one", "two", "three"}
 
+	if len(empty) != 0 || len(reverse(empty)) != 0 {
+		t.Fatal("empty adding elements")
+	}
 	if !sliceEqual(empty, reverse(reverse(empty))) {
 		t.Fatal("empty not good")
 	}
@@ -60,7 +62,8 @@ func TestRemoveSuffix(t *testing.T) {
 	testCases := []testCase{
 		testCase{"www.google.com", "google.com", "www"},
 		testCase{"foo.bar.google.co.uk", "google.co.uk", "foo.bar"},
-		testCase{"google.com", "www.google.com", "google.com"},
+		testCase{"google.com", "www.google.com", ""},
+		testCase{"google.com", "google.com", ""},
 	}
 
 	for _, tc := range testCases {
@@ -85,12 +88,14 @@ func TestExtractNLD(t *testing.T) {
 		testCase{"foo.www.google.com", 4, "foo.www.google.com"},
 		testCase{"foo.www.google.com", 5, "foo.www.google.com"},
 		testCase{"foo.www.google.com", 100, "foo.www.google.com"},
+		testCase{"google.com", 2, "google.com"},
+		testCase{"google.com", 3, "google.com"},
 	}
 
-	for _, tc := range testCases {
-		nld, err := extractNLD(tc.domain, tc.n, true)
+	for i, tc := range testCases {
+		nld, err := ExtractNLD(tc.domain, tc.n, true)
 		if nld != tc.nld {
-			t.Fatalf("Found %v, expected %v). Error: %+v", nld, tc.nld, err)
+			t.Fatalf("[%d] Found %v, expected %v). Error: %+v", i, nld, tc.nld, err)
 		}
 	}
 }
