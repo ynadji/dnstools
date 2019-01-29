@@ -1,9 +1,9 @@
 package main
 
 import (
-	"fmt"
-	//"github.com/influxdata/influxdb/kit/cli"
 	"bufio"
+	"fmt"
+	"github.com/influxdata/influxdb/kit/cli"
 	"golang.org/x/net/publicsuffix"
 	"os"
 	"strings"
@@ -64,59 +64,57 @@ func ExtractNLD(domain string, n int, public bool) (string, error) {
 	return "", fmt.Errorf("Unknown error :(")
 }
 
-//var flags struct {
-//	n                  int
-//	ignoreErrors       bool
-//	usePrivateSuffixes bool
-//}
+var flags struct {
+	n                  int
+	ignoreErrors       bool
+	usePrivateSuffixes bool
+}
 
-func main() {
-	//	fmt.Println("大家好！")
-	//	cmd := cli.NewCommand(&cli.Program{
-	//		Run:  run,
-	//		Name: "myprogram",
-	//		Opts: []cli.Opt{
-	//			{
-	//				DestP:   &flags.n,
-	//				Flag:    "n",
-	//				Default: 2,
-	//				Desc:    "Domain level to extract",
-	//			},
-	//			{
-	//				DestP:   &flags.ignoreErrors,
-	//				Flag:    "ignoreErrors",
-	//				Default: false,
-	//				Desc:    "Silently ignore errors",
-	//			},
-	//			{
-	//				DestP:   &flags.usePrivateSuffixes,
-	//				Flag:    "usePrivateSuffixes",
-	//				Default: false,
-	//				Desc:    "Treat known private suffixes as TLDs",
-	//			},
-	//		},
-	//	})
-	//
-	//	if err := cmd.Execute(); err != nil {
-	//		fmt.Fprintln(os.Stderr, err)
-	//		os.Exit(1)
-	//	}
-	//
+func run() error {
 	scanner := bufio.NewScanner(os.Stdin)
 	for scanner.Scan() {
 		domain := scanner.Text()
-		// Should be domain, flags.n, !flags.usePrivateSuffixes
-		eld, err := ExtractNLD(domain, 1, true)
-		// err != nil && !flags.ignoreErrors
-		if err != nil {
+		eld, err := ExtractNLD(domain, flags.n, !flags.usePrivateSuffixes)
+		if err != nil && !flags.ignoreErrors {
 			fmt.Printf("%v,%v\n", eld, err)
 		} else {
 			fmt.Println(eld)
 		}
 	}
 	if err := scanner.Err(); err != nil {
-		fmt.Fprintln(os.Stderr, "Error reading standard input:", err)
+		return fmt.Errorf("Error reading standard input: %+v\n", err)
+	}
+	return nil
+}
+
+func main() {
+	cmd := cli.NewCommand(&cli.Program{
+		Run:  run,
+		Name: "nld",
+		Opts: []cli.Opt{
+			{
+				DestP:   &flags.n,
+				Flag:    "n",
+				Default: 2,
+				Desc:    "Domain level to extract",
+			},
+			{
+				DestP:   &flags.ignoreErrors,
+				Flag:    "ignoreErrors",
+				Default: false,
+				Desc:    "Silently ignore errors",
+			},
+			{
+				DestP:   &flags.usePrivateSuffixes,
+				Flag:    "usePrivateSuffixes",
+				Default: false,
+				Desc:    "Treat known private suffixes as TLDs",
+			},
+		},
+	})
+
+	if err := cmd.Execute(); err != nil {
+		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
-	os.Exit(0)
 }
