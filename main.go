@@ -31,6 +31,8 @@ func removeSuffix(domain, e2ld string) string {
 }
 
 func ExtractNLD(domain string, n int, public bool) (string, error) {
+	// Trim trailing dot
+	domain = strings.TrimRight(domain, ".")
 	if n <= 0 {
 		return "", fmt.Errorf("n must be greated than 0")
 	}

@@ -90,6 +90,10 @@ func TestExtractNLD(t *testing.T) {
 		testCase{"foo.www.google.com", 100, "foo.www.google.com"},
 		testCase{"google.com", 2, "google.com"},
 		testCase{"google.com", 3, "google.com"},
+		// ignore trailing dot
+		testCase{"foo.www.google.com.", 1, "com"},
+		testCase{"foo.www.google.com.", 2, "google.com"},
+		testCase{"foo.www.google.com.", 3, "www.google.com"},
 	}
 
 	for i, tc := range testCases {
