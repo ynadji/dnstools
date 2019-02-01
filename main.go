@@ -80,7 +80,9 @@ func run() error {
 		if err != nil && !flags.ignoreErrors {
 			fmt.Printf("%v,%v\n", eld, err)
 		} else {
-			fmt.Println(eld)
+			if eld != "" {
+				fmt.Println(eld)
+			}
 		}
 	}
 	if err := scanner.Err(); err != nil {
