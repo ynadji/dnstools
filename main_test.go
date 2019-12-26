@@ -97,9 +97,64 @@ func TestExtractNLD(t *testing.T) {
 	}
 
 	for i, tc := range testCases {
-		nld, err := ExtractNLD(tc.domain, tc.n, true)
+		nld, err := ExtractNLD(tc.domain, tc.n, true, true)
 		if nld != tc.nld {
-			t.Fatalf("[%d] Found %v, expected %v). Error: %+v", i, nld, tc.nld, err)
+			t.Fatalf("[%d] Found '%v', expected '%v'. Error: %+v", i, nld, tc.nld, err)
+		}
+	}
+
+	// Ensure ICANN check works
+	testCases = []testCase{
+		testCase{"www.google.invalid", 1, ""},
+		testCase{"www.google.test", 1, ""},
+		testCase{"www.google.local", 1, ""},
+		testCase{"www.google.localhost", 1, ""},
+		testCase{"www.google.example", 1, ""},
+		testCase{"djhkusahvuih", 1, ""},
+		testCase{"www.google.onion", 1, "onion"},
+	}
+
+	for i, tc := range testCases {
+		nld, err := ExtractNLD(tc.domain, tc.n, true, true)
+		if tc.nld == "" && err == nil {
+			t.Fatalf("[%d] Found '%v', expected '%v'. Error: %+v", i, nld, tc.nld, err)
+		}
+		if tc.nld != "" && tc.nld != nld {
+			t.Fatalf("[%d] Found '%v', expected '%v'. Error: %+v", i, nld, tc.nld, err)
+		}
+	}
+}
+
+func TestHasListedSuffix(t *testing.T) {
+	var hasListedSuffixTestCases = []struct {
+		domain string
+		want   bool
+	}{
+		{"foo.com", true},
+		{"test", false},
+		{"com", true},
+		{"foo.test", false}, // Reserved TLDs see https://tools.ietf.org/html/rfc2606#page-2
+		{"foo.example", false},
+		{"foo.invalid", false},
+		{"foo.localhost", false},
+		{"example", false},
+		{"invalid", false},
+		{"localhost", false},
+		{"foo.baaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaar", false}, // too long, can never be valid TLD
+		{"万岁.中国", true},                        // Unicode
+		{"xn--chqu66a.xn--fiqs8s", true},       // Above in punycode
+		{"ésta.bien.es", true},                 // Unicode
+		{"xn--sta-9la.bien.es", true},          // Above in punycode
+		{"ياسين.الجزائر", true},                // Works with reverse directional unicode
+		{"xn--mgby9cnc.xn--lgbbat1ad8j", true}, // Above in punycode (parts reversed)
+		{"!@#$%^&*.com", true},                 // Does not check for invalid characters
+		{"dyndns-at-work.com", true},
+	}
+
+	for _, tc := range hasListedSuffixTestCases {
+		got := HasListedSuffix(tc.domain)
+		if got != tc.want {
+			t.Errorf("%q: got %v, want %v", tc.domain, got, tc.want)
 		}
 	}
 }

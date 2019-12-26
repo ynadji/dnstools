@@ -3,10 +3,12 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"github.com/influxdata/influxdb/kit/cli"
-	"golang.org/x/net/publicsuffix"
 	"os"
 	"strings"
+
+	"github.com/influxdata/influxdb/kit/cli"
+	"golang.org/x/net/idna"
+	"golang.org/x/net/publicsuffix"
 )
 
 func reverse(s []string) []string {
@@ -30,13 +32,33 @@ func removeSuffix(domain, e2ld string) string {
 	return strings.Trim(restAndDot, ". ")
 }
 
-func ExtractNLD(domain string, n int, public bool) (string, error) {
+// HasListedSuffix returns true if the domain has a TLD that appears on the
+// public suffix list and false otherwise. Converts to ASCII to ensure suffix
+// check succeeds but does no other normalization.
+func HasListedSuffix(domain string) bool {
+	domain, err := idna.ToASCII(domain)
+	if err != nil {
+		return false
+	}
+	ps, icann := publicsuffix.PublicSuffix(domain)
+	// Only ICANN-managed domains can have a single label and
+	// privately-managed domains must have multiple labels. If there is no
+	// known suffix, `PublicSuffix` just returns the last label to `ps`
+	// (e.g., single label). If it isn't managed by ICANN and does not
+	// contain a '.', it must not be present on the list.
+	return icann || (strings.IndexByte(ps, '.') >= 0)
+}
+
+func ExtractNLD(domain string, n int, public bool, onlyIcann bool) (string, error) {
 	// Trim trailing dot
 	domain = strings.TrimRight(domain, ".")
 	if n <= 0 {
 		return "", fmt.Errorf("n must be greated than 0")
 	}
 	suffix, _ := publicsuffix.PublicSuffix(domain)
+	if onlyIcann && !HasListedSuffix(domain) {
+		return "", fmt.Errorf("'%v' has unknown TLD '%v'", domain, suffix)
+	}
 	if n == 1 {
 		return suffix, nil
 	} else {
@@ -70,13 +92,14 @@ var flags struct {
 	n                  int
 	ignoreErrors       bool
 	usePrivateSuffixes bool
+	ignoreNonIcann     bool
 }
 
 func run() error {
 	scanner := bufio.NewScanner(os.Stdin)
 	for scanner.Scan() {
 		domain := scanner.Text()
-		eld, err := ExtractNLD(domain, flags.n, !flags.usePrivateSuffixes)
+		eld, err := ExtractNLD(domain, flags.n, !flags.usePrivateSuffixes, flags.ignoreNonIcann)
 		if err != nil && !flags.ignoreErrors {
 			fmt.Printf("%v,%v\n", eld, err)
 		} else {
@@ -113,6 +136,12 @@ func main() {
 				Flag:    "usePrivateSuffixes",
 				Default: false,
 				Desc:    "Treat known private suffixes as TLDs",
+			},
+			{
+				DestP:   &flags.ignoreNonIcann,
+				Flag:    "ignoreNonIcann",
+				Default: false,
+				Desc:    "Ignore domains with TLDs not known by the PSL",
 			},
 		},
 	})
