@@ -11,6 +11,14 @@ import (
 	"golang.org/x/net/publicsuffix"
 )
 
+var flags struct {
+	n                  int
+	ignoreErrors       bool
+	usePrivateSuffixes bool
+	ignoreNonIcann     bool
+	exactOnly          bool
+}
+
 func reverse(s []string) []string {
 	for i, j := 0, len(s)-1; i < j; i, j = i+1, j-1 {
 		s[i], s[j] = s[j], s[i]
@@ -50,8 +58,6 @@ func HasListedSuffix(domain string) bool {
 }
 
 func ExtractNLD(domain string, n int, public bool, onlyIcann bool) (string, error) {
-	// Trim trailing dot
-	domain = strings.TrimRight(domain, ".")
 	if n <= 0 {
 		return "", fmt.Errorf("n must be greated than 0")
 	}
@@ -88,18 +94,17 @@ func ExtractNLD(domain string, n int, public bool, onlyIcann bool) (string, erro
 	return "", fmt.Errorf("Unknown error :(")
 }
 
-var flags struct {
-	n                  int
-	ignoreErrors       bool
-	usePrivateSuffixes bool
-	ignoreNonIcann     bool
-}
-
 func run() error {
 	scanner := bufio.NewScanner(os.Stdin)
 	for scanner.Scan() {
 		domain := scanner.Text()
+		// Trim trailing dot
+		domain = strings.TrimRight(domain, ".")
 		eld, err := ExtractNLD(domain, flags.n, !flags.usePrivateSuffixes, flags.ignoreNonIcann)
+		if flags.exactOnly && domain != eld {
+			err = fmt.Errorf("no exact match between domain/eld '%v' != '%v'. More: %v", domain, eld, err)
+			eld = ""
+		}
 		if err != nil && !flags.ignoreErrors {
 			fmt.Printf("%v,%v\n", eld, err)
 		} else {
@@ -142,6 +147,12 @@ func main() {
 				Flag:    "ignoreNonIcann",
 				Default: false,
 				Desc:    "Ignore domains with TLDs not known by the PSL",
+			},
+			{
+				DestP:   &flags.exactOnly,
+				Flag:    "exactOnly",
+				Default: false,
+				Desc:    "Only keep domains if exactly matches label level",
 			},
 		},
 	})
