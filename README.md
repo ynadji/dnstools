@@ -1,3 +1,16 @@
+# `nld`
+
+## Installation
+
+Make sure `go` is installed and:
+
+```
+$ go get github.com/ynadji/nld
+$ go install github.com/ynadji/nld
+```
+
+## Usage
+
 ```
 Usage:
   nld [flags]
