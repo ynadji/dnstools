@@ -3,10 +3,12 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"log"
 	"os"
 	"strings"
 
-	"github.com/influxdata/influxdb/kit/cli"
+	//"github.com/urfave/cli/v2"
+	"github.com/urfave/cli"
 	"golang.org/x/net/idna"
 	"golang.org/x/net/publicsuffix"
 )
@@ -94,18 +96,18 @@ func ExtractNLD(domain string, n int, public bool, onlyIcann bool) (string, erro
 	return "", fmt.Errorf("Unknown error :(")
 }
 
-func run() error {
+func run(c *cli.Context) error {
 	scanner := bufio.NewScanner(os.Stdin)
 	for scanner.Scan() {
 		domain := scanner.Text()
 		// Trim trailing dot
 		domain = strings.TrimRight(domain, ".")
-		eld, err := ExtractNLD(domain, flags.n, !flags.usePrivateSuffixes, flags.ignoreNonIcann)
-		if flags.exactOnly && domain != eld {
+		eld, err := ExtractNLD(domain, c.Int("numLevels"), !c.Bool("usePrivateSuffixes"), c.Bool("ignoreNonIcann"))
+		if c.Bool("exactOnly") && domain != eld {
 			err = fmt.Errorf("no exact match between domain/eld '%v' != '%v'. More: %v", domain, eld, err)
 			eld = ""
 		}
-		if err != nil && !flags.ignoreErrors {
+		if err != nil && !c.Bool("ignoreErrors") {
 			fmt.Printf("%v,%v\n", eld, err)
 		} else {
 			if eld != "" {
@@ -120,45 +122,42 @@ func run() error {
 }
 
 func main() {
-	cmd := cli.NewCommand(&cli.Program{
-		Run:  run,
-		Name: "nld",
-		Opts: []cli.Opt{
-			{
-				DestP:   &flags.n,
-				Flag:    "n",
-				Default: 2,
-				Desc:    "Domain level to extract",
-			},
-			{
-				DestP:   &flags.ignoreErrors,
-				Flag:    "ignoreErrors",
-				Default: false,
-				Desc:    "Silently ignore errors",
-			},
-			{
-				DestP:   &flags.usePrivateSuffixes,
-				Flag:    "usePrivateSuffixes",
-				Default: false,
-				Desc:    "Treat known private suffixes as TLDs",
-			},
-			{
-				DestP:   &flags.ignoreNonIcann,
-				Flag:    "ignoreNonIcann",
-				Default: false,
-				Desc:    "Ignore domains with TLDs not known by the PSL",
-			},
-			{
-				DestP:   &flags.exactOnly,
-				Flag:    "exactOnly",
-				Default: false,
-				Desc:    "Only keep domains if exactly matches label level",
-			},
+	app := &cli.App{
+		Name:   "nld",
+		Usage:  "nld < domains.txt > nlds.txt",
+		Action: run,
+	}
+	app.Flags = []cli.Flag{
+		&cli.IntFlag{
+			Name:    "numLevels",
+			Usage:   "Domain level to extract",
+			Value:   2,
+			Aliases: []string{"n"},
 		},
-	})
+		&cli.BoolFlag{
+			Name:  "ignoreErrors",
+			Usage: "Silently ignore errors",
+			Value: false,
+		},
+		&cli.BoolFlag{
+			Name:  "usePrivateSuffixes",
+			Usage: "Treat known private suffixes as TLDs",
+			Value: false,
+		},
+		&cli.BoolFlag{
+			Name:  "ignoreNonIcann",
+			Usage: "Ignore domains with TLDs not known by the PSL",
+			Value: false,
+		},
+		&cli.BoolFlag{
+			Name:  "exactOnly",
+			Usage: "Only keep domains if exactly matches label level",
+			Value: false,
+		},
+	}
 
-	if err := cmd.Execute(); err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
+	err := app.Run(os.Args)
+	if err != nil {
+		log.Fatal(err)
 	}
 }
