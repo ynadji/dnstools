@@ -7,8 +7,8 @@ import (
 	"os"
 	"strings"
 
-	//"github.com/urfave/cli/v2"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
+	//"github.com/urfave/cli"
 	"golang.org/x/net/idna"
 	"golang.org/x/net/publicsuffix"
 )
