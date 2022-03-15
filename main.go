@@ -63,6 +63,8 @@ func ExtractNLD(domain string, n int, public bool, onlyIcann bool) (string, erro
 	if n <= 0 {
 		return "", fmt.Errorf("n must be greated than 0")
 	}
+	// Trim trailing dot
+	domain = strings.TrimRight(domain, ".")
 	suffix, _ := publicsuffix.PublicSuffix(domain)
 	if onlyIcann && !HasListedSuffix(domain) {
 		return "", fmt.Errorf("'%v' has unknown TLD '%v'", domain, suffix)
@@ -100,8 +102,6 @@ func run(c *cli.Context) error {
 	scanner := bufio.NewScanner(os.Stdin)
 	for scanner.Scan() {
 		domain := scanner.Text()
-		// Trim trailing dot
-		domain = strings.TrimRight(domain, ".")
 		eld, err := ExtractNLD(domain, c.Int("numLevels"), !c.Bool("usePrivateSuffixes"), c.Bool("ignoreNonIcann"))
 		if c.Bool("exactOnly") && domain != eld {
 			err = fmt.Errorf("no exact match between domain/eld '%v' != '%v'. More: %v", domain, eld, err)
