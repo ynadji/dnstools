@@ -10,5 +10,6 @@ require (
 require (
 	github.com/cpuguy83/go-md2man/v2 v2.0.1 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
+	github.com/ynadji/dnstrie v0.0.0-20220329012149-174b65649ac3
 	golang.org/x/text v0.3.7 // indirect
 )
