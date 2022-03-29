@@ -1,4 +1,4 @@
-module github.com/ynadji/nld
+module github.com/ynadji/dnstools
 
 go 1.17
 
