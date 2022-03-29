@@ -14,7 +14,8 @@ func filter(c *cli.Context, p func(domain string) bool) error {
 	scanner := bufio.NewScanner(os.Stdin)
 	for scanner.Scan() {
 		domain := scanner.Text()
-		if p(domain) {
+		// xor
+		if p(domain) != c.Bool("complement") {
 			fmt.Println(domain)
 		}
 	}
@@ -60,12 +61,18 @@ func main() {
 				Aliases: []string{"v"},
 				Usage:   "Filter to domains that are syntactically valid.",
 				Action:  valid,
+				Flags: []cli.Flag{
+					&cli.BoolFlag{Name: "complement", Aliases: []string{"c"}},
+				},
 			},
 			{
 				Name:    "registerable",
 				Aliases: []string{"r"},
 				Usage:   "Filter to domains that could be registered and used. Excludes TLDs.",
 				Action:  registerable,
+				Flags: []cli.Flag{
+					&cli.BoolFlag{Name: "complement", Aliases: []string{"c"}},
+				},
 			},
 			{
 				Name:    "ascii",
