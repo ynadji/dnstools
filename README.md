@@ -8,7 +8,7 @@ Make sure `go` is installed through your distro. You can install all the tools
 with:
 
 ```
-$ go install github.com/ynadji/dnstools/...@latest
+$ go install github.com/ynadji/dnstools/...@HEAD
 ```
 
 ## Usage
