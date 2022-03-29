@@ -13,6 +13,14 @@ $ go install github.com/ynadji/dnstools/...@latest
 
 ## Usage
 
+### `nld`
+
+`nld` changes domain names on stdin to their `n`th level domain (NLD). For
+example, the 1LD (TLD), 2LD, 3LD, and 4LD of `foo.bar.google.com` are `com`,
+`google.com`, `bar.google.com`, and `foo.bar.google.com`, respectively. `nld`
+uses the public suffix list so it is aware to treat `co.uk` as a TLD rather than
+naively splitting on `.`.
+
 ```
 ¡ nld --help
 NAME:
@@ -33,6 +41,11 @@ GLOBAL OPTIONS:
    --help, -h                   show help (default: false)
 
 ```
+
+### `dclean`
+
+`dclean` filters or maps domain names on stdin based on common validations and
+transformations.
 
 ```
 ¡ dclean --help
