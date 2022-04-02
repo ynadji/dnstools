@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 
 	"github.com/urfave/cli/v2"
 	"github.com/ynadji/dnstrie/dns"
@@ -13,7 +14,7 @@ import (
 func filter(c *cli.Context, p func(domain string) bool) error {
 	scanner := bufio.NewScanner(os.Stdin)
 	for scanner.Scan() {
-		domain := scanner.Text()
+		domain := strings.TrimRight(scanner.Text(), ".")
 		// xor
 		if p(domain) != c.Bool("complement") {
 			fmt.Println(domain)
@@ -28,7 +29,7 @@ func filter(c *cli.Context, p func(domain string) bool) error {
 func foreach(c *cli.Context, t func(domain string) (string, error)) error {
 	scanner := bufio.NewScanner(os.Stdin)
 	for scanner.Scan() {
-		domain := scanner.Text()
+		domain := strings.TrimRight(scanner.Text(), ".")
 		if processed, err := t(domain); processed != "" && err == nil {
 			fmt.Println(processed)
 		}
